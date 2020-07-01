@@ -1,45 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import './App.css';
 
-function App() {
-    const [todoList, setTodoList] = useState([]);
-    const [inputValue, setInputValue] = useState('');
-    const [LLTodo, setLLTodo] = useState(null);
+class App extends React.Component {
+    constructor(props) {
+        super(props);
+        this.inputChangedHandler = this.inputChangedHandler.bind(this);
+        this.lazyLoadComponent = this.lazyLoadComponent.bind(this);
+        this.addToDoHandler = this.addToDoHandler.bind(this);
+    }
 
-    const inputChangedHandler = (e) => {
+    state = {
+        todoList: [],
+        inputValue: '',
+        LLTodo: null,
+    }
+
+    componentDidUpdate() {
+        const { LLTodo, todoList } = this.state;
+        todoList.length && !LLTodo && this.lazyLoadComponent();
+    }
+
+    inputChangedHandler(e) {
         const { target: { value } } = e;
-        setInputValue(value)
+        this.setState({
+            inputValue: value,
+        })
     }
 
-    useEffect(() => {
-        todoList.length && lazyLoadComponent();
-    }, [todoList])
-
-    const lazyLoadComponent = async () => {
-        const  Todo = React.lazy(() => import('./components/Todo'))
-        setLLTodo(Todo);
+    async lazyLoadComponent() {
+        const { default: todo } = await import('./components/Todo');
+        this.setState({
+            LLTodo: todo,
+        })
     }
 
-    const addTotoHandler = () => {
+    addToDoHandler() {
+        const { inputValue, todoList } = this.state;
         if (!inputValue) return;
         const newTodoList = todoList.concat(inputValue);
-        setTodoList(newTodoList)
-        setInputValue('');
+        this.setState({
+            todoList: newTodoList,
+            inputValue: '',
+        })
     }
 
-    return (
-        <React.Suspense fallback={<div>Loading...</div>}>
+    render() {
+        const { LLTodo, todoList, inputValue } = this.state;
+        return (
             <div className="App">
                 <header className="App-header">
                     Add todo
-                </header>
-                <input value={inputValue} onChange={inputChangedHandler} />
-                <button onClick={addTotoHandler}>Add</button>
+                    </header>
+                <input value={inputValue} onChange={this.inputChangedHandler} />
+                <button onClick={this.addToDoHandler}>Add</button>
                 <hr />
-                {LLTodo && <LLTodo todos={todoList}/>}
+                {LLTodo && <LLTodo todos={todoList} />}
             </div>
-        </React.Suspense>
-    );
+        );
+    }
 }
 
 export default App;
